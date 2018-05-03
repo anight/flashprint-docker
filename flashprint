@@ -27,6 +27,7 @@ if [ -n "$STY" ] ; then
 	# Run the FlashPrint
 	docker run -ti --rm \
 		--device /dev/dri --device /dev/snd \
+		--net host --hostname docker \
 		-e DISPLAY=${DISPLAY} -e QT_AUTO_SCREEN_SCALE_FACTOR=1 \
 		-v ${HOME}:${HOME} \
 		-v /var/run/dbus:/var/run/dbus \
