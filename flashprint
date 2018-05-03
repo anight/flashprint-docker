@@ -1,0 +1,41 @@
+#! /bin/sh
+
+# The lock file, because we want only one instance of FlashPrint
+LOCKFILE=${XDG_RUNTIME_DIR}/FlashPrint.lock
+LOCKFD=99
+
+_lock()             { flock -$1 ${LOCKFD}; }
+_prepare_locking()  { eval "exec ${LOCKFD}>\"${LOCKFILE}\""; }
+exlock_now()        { _lock xn; }
+exlock()            { _lock x; }
+shlock()            { _lock s; }
+unlock()            { _lock u; }
+
+if [ -n "$STY" ] ; then
+
+	# Ensure we have only one copy of FlashPrint running
+	_prepare_locking
+	exlock_now || {
+		# There is another FlashPrint running - switch to it
+		wmctrl -i -R $(wmctrl -l | grep "N/A FlashPrint" | head -1 | cut -d ' ' -f 1)
+		exit 0
+	}
+
+	# Allow local x11 apps to connect to our x11 server
+	xhost +local:
+
+	# Run the FlashPrint
+	docker run -ti --rm \
+		--device /dev/dri --device /dev/snd \
+		-e DISPLAY=${DISPLAY} -e QT_AUTO_SCREEN_SCALE_FACTOR=1 \
+		-v ${HOME}:${HOME} \
+		-v /var/run/dbus:/var/run/dbus \
+		-v /tmp/.X11-unix:/tmp/.X11-unix \
+		anight/flashprint \
+		/usr/share/FlashPrint/FlashPrint $@
+
+else
+	# Run the code above in screen session
+	screen -dmS FlashPrint $0 $@
+fi
+
