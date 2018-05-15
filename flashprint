@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 # The lock file, because we want only one instance of FlashPrint
 LOCKFILE=${XDG_RUNTIME_DIR}/FlashPrint.lock
@@ -21,15 +21,16 @@ if [ -n "$STY" ] ; then
 		exit 0
 	}
 
-	# Allow local x11 apps to connect to our x11 server
-	xhost +local:
-
 	# Run the FlashPrint
-	docker run -ti --rm \
+	docker run -ti --rm --name flashprint \
 		--device /dev/dri --device /dev/snd \
 		--net host --hostname docker \
-		-e DISPLAY=${DISPLAY} -e QT_AUTO_SCREEN_SCALE_FACTOR=1 \
+		-e DISPLAY=unix${DISPLAY} \
+		-e QT_AUTO_SCREEN_SCALE_FACTOR=1 \
 		-v ${HOME}:${HOME} \
+		-v /etc/localtime:/etc/localtime:ro \
+		-v ${HOME}/.icons/default:/usr/share/icons/Adwaita:ro \
+		-v /etc/machine-id:/etc/machine-id:ro \
 		-v /var/run/dbus:/var/run/dbus \
 		-v /tmp/.X11-unix:/tmp/.X11-unix \
 		anight/flashprint \
